@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.*;
 import java.util.List;
 import java.util.LinkedList;
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 
 public class StorageS3 extends StorageInterface
 {
@@ -69,6 +70,28 @@ public class StorageS3 extends StorageInterface
     }
 
 
+    /**
+     * S3 uses an inclusive range (on both ends).
+     * This call however uses a more standard, inclusive on the start and exclusive on the end.
+     * so returns all the bytes X such that (start <= X < end)
+     */
+    public byte[] downloadPartActual(String bucket, String file, long start, long end)
+        throws java.io.IOException
+    {
+        GetObjectRequest req = new GetObjectRequest(bucket, file);
 
+        req.setRange(start, end - 1);
+        S3Object obj = s3.getObject(req);
+
+        int len = (int)obj.getObjectMetadata().getContentLength();
+        byte[] b=new byte[len];
+        DataInputStream din = new DataInputStream(obj.getObjectContent());
+
+        din.readFully(b);
+        din.close();
+
+        return b;
+
+    }
 
 }

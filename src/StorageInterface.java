@@ -49,11 +49,58 @@ public abstract class StorageInterface
         return tag;
     }
 
+
     public abstract String uploadPartActual(String bucket, String file, String upload_id, String checksum, int part_size, int part_number, byte[] out, double max_rate);
 
     public abstract String completeMultipartupload(String bucket, String file, String upload_id, long total_len, List<String> parts);
 
 
+    /**
+     * S3 uses an inclusive range (on both ends).
+     * This call however uses a more standard, inclusive on the start and exclusive on the end.
+     * so returns all the bytes X such that (start <= X < end)
+     */
+    public byte[] downloadPart(String bucket, String file, long start, long end)
+    {
+        long t1 = System.nanoTime();
+        while(true)
+        {   
+            try
+            {   
+                log.log(Level.FINE, "Started " + file + " " + start + " " + end);
+
+                byte[] b = downloadPartActual(bucket, file, start, end);
+
+
+                int len = b.length;
+                long t2 = System.nanoTime();
+
+                double seconds = (double)(t2 - t1) / 1000000.0 / 1000.0;
+                double rate = (double)len / seconds / 1024.0;
+
+                DecimalFormat df = new DecimalFormat("0.00");
+
+                log.log(Level.FINE,file + " " + start + " " + end  + " size: " + len + " in " + df.format(seconds) + " sec, " + df.format(rate) + " kB/s");
+
+                return b;
+
+
+
+            }
+            catch(Throwable t)
+            {   
+                log.log(Level.WARNING, "Error in download", t);
+                try{Thread.sleep(5000);}catch(Exception e){}
+            }
+        }
+
+
+
+
+    }
+
+    public abstract byte[] downloadPartActual(String bucket, String file, long start, long end)
+        throws java.io.IOException;
 
 
 }

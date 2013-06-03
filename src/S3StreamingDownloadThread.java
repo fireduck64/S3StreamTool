@@ -65,8 +65,9 @@ class S3StreamingDownloadThread extends Thread
 				DownloadRequest req = queue.take();
 
 				byte[] data;
+
+                data = config.getStorageInterface().downloadPart(config.getS3Bucket(), config.getS3File(), req.start, req.end);
 				
-				data = S3StreamingDownload.get(config.getS3Client(), config.getS3Bucket(), config.getS3File(), req.start, req.end);
 
 
 				DataBlock db = new DataBlock(req.block_no, data);

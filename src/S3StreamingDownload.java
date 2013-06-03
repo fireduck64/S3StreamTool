@@ -227,49 +227,5 @@ public class S3StreamingDownload
 	 * This call however uses a more standard, inclusive on the start and exclusive on the end.
 	 * so returns all the bytes X such that (start <= X < end)
 	 */
-	protected static byte[] get(AmazonS3Client s3, String bucket, String file, long start, long end) 
-	{
-        long t1 = System.nanoTime();
-		while(true)
-		{
-			try
-			{
-				log.log(Level.FINE, "Started " + file + " " + start + " " + end);
-
-				GetObjectRequest req = new GetObjectRequest(bucket, file);
-
-				req.setRange(start, end - 1);
-				S3Object obj = s3.getObject(req); 
-				
-				int len = (int)obj.getObjectMetadata().getContentLength();
-				byte[] b=new byte[len];
-				DataInputStream din = new DataInputStream(obj.getObjectContent());
-
-				din.readFully(b);
-				din.close();
-
-
-		        long t2 = System.nanoTime();
-
-		        double seconds = (double)(t2 - t1) / 1000000.0 / 1000.0;
-        		double rate = (double)len / seconds / 1024.0;
-
-		        DecimalFormat df = new DecimalFormat("0.00");
-
-        		log.log(Level.FINE,file + " " + start + " " + end  + " size: " + len + " in " + df.format(seconds) + " sec, " + df.format(rate) + " kB/s");
-
-				return b;
-
-
-
-			}
-			catch(Throwable t)
-			{
-				log.log(Level.WARNING, "Error in download", t);
-				try{Thread.sleep(5000);}catch(Exception e){}
-			}
-		}
-
-	}
 
 }

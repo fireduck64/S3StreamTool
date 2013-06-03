@@ -89,7 +89,11 @@ public class StorageGlacier extends StorageInterface
 
     }
 
-
+    public byte[] downloadPartActual(String bucket, String file, long start, long end)
+        throws java.io.IOException
+    {
+        return null;
+    }
 
 
 }
