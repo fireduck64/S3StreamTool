@@ -54,6 +54,14 @@ public abstract class StorageInterface
 
     public abstract String completeMultipartupload(String bucket, String file, String upload_id, long total_len, List<String> parts);
 
+    public String getFileDownloadKey(S3StreamConfig config)
+    {
+        return config.getS3File();
+    }
+
+    public abstract long getObjectSize(S3StreamConfig config);
+
+
 
     /**
      * S3 uses an inclusive range (on both ends).
@@ -85,6 +93,12 @@ public abstract class StorageInterface
                 return b;
 
 
+
+            }
+            catch(DelayException t)
+            {
+                log.log(Level.WARNING, "Download not ready " + t.toString());
+                try{Thread.sleep(120000);}catch(Exception e){}
 
             }
             catch(Throwable t)

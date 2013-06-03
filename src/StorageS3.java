@@ -94,4 +94,13 @@ public class StorageS3 extends StorageInterface
 
     }
 
+
+    public long getObjectSize(S3StreamConfig config)
+    {
+        ObjectMetadata omd = config.getS3Client().getObjectMetadata(config.getS3Bucket(), config.getS3File());
+
+        return omd.getContentLength();
+    }
+
+
 }

@@ -118,9 +118,7 @@ public class S3StreamingDownload
 		long readOffset=0;
 		long totalLen;
 
-		ObjectMetadata omd = config.getS3Client().getObjectMetadata(config.getS3Bucket(), config.getS3File());
-
-		totalLen = omd.getContentLength();
+		totalLen = config.getStorageInterface().getObjectSize(config);
 		
 		LinkedBlockingQueue<DownloadRequest> queue = new LinkedBlockingQueue<DownloadRequest>();
 		

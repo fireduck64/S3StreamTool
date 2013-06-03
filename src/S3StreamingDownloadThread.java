@@ -66,7 +66,11 @@ class S3StreamingDownloadThread extends Thread
 
 				byte[] data;
 
-                data = config.getStorageInterface().downloadPart(config.getS3Bucket(), config.getS3File(), req.start, req.end);
+                data = config.getStorageInterface().downloadPart(
+                    config.getS3Bucket(),
+                    config.getStorageInterface().getFileDownloadKey(config), 
+                    req.start, 
+                    req.end);
 				
 
 

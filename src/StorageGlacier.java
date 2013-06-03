@@ -9,6 +9,7 @@ import org.apache.commons.codec.binary.Hex;
 import java.util.List;
 import java.util.LinkedList;
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 
 public class StorageGlacier extends StorageInterface
 {
@@ -92,8 +93,73 @@ public class StorageGlacier extends StorageInterface
     public byte[] downloadPartActual(String bucket, String file, long start, long end)
         throws java.io.IOException
     {
-        return null;
+        try
+        {
+            long end_idx = end - 1;
+            String range = "" +start + "-" + end_idx;
+        
+            GetJobOutputRequest req = new GetJobOutputRequest(bucket, file, range);
+            GetJobOutputResult res = glacier.getJobOutput(req);
+
+            DataInputStream d_in = new DataInputStream(res.getBody());
+            byte[] b = new byte[(int)(end - start)];
+            d_in.readFully(b);
+            d_in.close();
+            return b;
+        }
+        catch(com.amazonaws.services.glacier.model.InvalidParameterValueException e)
+        {
+            throw new DelayException(e);
+        }
     }
 
+    @Override
+    public String getFileDownloadKey(S3StreamConfig config)
+    {   
+        return config.getGlacierJobId();
+    }
+
+    /**
+     * Need to create an archive download job and then keep checking it until we have the data.
+     * AKA, kill yourself
+     */
+    public long getObjectSize(S3StreamConfig config)
+    {
+        JobParameters params = new JobParameters();
+        params.setType("archive-retrieval");
+        params.setArchiveId(config.getS3File());
+        params.setSNSTopic("arn:aws:sns:us-west-2:615289640696:alarms");
+        
+        InitiateJobRequest job_req = new InitiateJobRequest(config.getS3Bucket(), params);
+
+        config.setGlacierJobId(glacier.initiateJob(job_req).getJobId());
+
+        while(true)
+        {
+            try
+            {
+                DescribeJobRequest describe = new DescribeJobRequest(config.getS3Bucket(), config.getGlacierJobId());
+
+                long sz = glacier.describeJob(describe).getArchiveSizeInBytes();
+                log.info("Object Size: " + sz);
+                return glacier.describeJob(describe).getArchiveSizeInBytes();
+
+            }
+            catch(com.amazonaws.AmazonClientException e)
+            {
+                log.severe("Job ID " + config.getGlacierJobId() + " probably not ready -" +  e.toString());
+
+                try{
+                    Thread.sleep(15000L);
+                }
+                catch(Throwable t){}
+
+                
+            }
+
+
+
+        }
+    }
 
 }

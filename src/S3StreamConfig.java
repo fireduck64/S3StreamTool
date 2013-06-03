@@ -47,6 +47,7 @@ public class S3StreamConfig
 	private String s3_file;
 
     private boolean glacier=false;
+    private String glacier_job_id=null;
 
 	private boolean encryption=false;
 	private String encryption_mode= DEFAULT_ENCRYPTION_MODE;
@@ -75,6 +76,7 @@ public class S3StreamConfig
 	public void setInputStream(InputStream in){source = in;}
 	public void setOutputStream(OutputStream out){destination = out;}
     public void setGlacier(boolean g){glacier = g;}
+    public void setGlacierJobId(String job_id){glacier_job_id = job_id;}
 
 
 	public AmazonS3Client getS3Client(){return s3_client;}
@@ -95,8 +97,8 @@ public class S3StreamConfig
 	public int getBlockSize(){return block_size;}
 	public int getIOThreads(){return io_threads;}
     public boolean getGlacier(){return glacier;}
-    public double getMaxBytesPerSecond(){ return max_bytes_per_second; }
-    
+    public String getGlacierJobId(){return glacier_job_id;}
+    public double getMaxBytesPerSecond(){ return max_bytes_per_second;}
 
 	public InputStream getInputStream(){return source;}
 	public OutputStream getOutputStream(){return destination;}
