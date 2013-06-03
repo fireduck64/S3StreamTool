@@ -25,11 +25,6 @@ package baldrickv.s3streamingtool;
 
 import com.amazonaws.auth.AWSCredentials;
 
-import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.PartETag;
-import com.amazonaws.services.s3.AmazonS3Client;
 
 import java.util.Random;
 import java.util.LinkedList;
@@ -47,6 +42,8 @@ import java.nio.ByteBuffer;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;
+
+import com.amazonaws.services.s3.AmazonS3Client;
 
 public class S3StreamingUpload
 {
@@ -140,14 +137,12 @@ public class S3StreamingUpload
 		boolean first_block = true;
 		boolean last_block = false;
 
+        String upload_id = config.getStorageInterface().initiateMultipartUpload(bucket, file, block_size);
 
-		InitiateMultipartUploadRequest init_req = new InitiateMultipartUploadRequest(bucket, file);
-		
-		String upload_id = config.getS3Client().initiateMultipartUpload(init_req).getUploadId();
 
 		Semaphore read_allow = new Semaphore(config.getIOThreads());
 
-		BlockWeaver<PartETag> etags = new BlockWeaver<PartETag>(1);
+		BlockWeaver<String> etags = new BlockWeaver<String>(1);
 
 		LinkedBlockingQueue<DataBlock> save_queue = new LinkedBlockingQueue<DataBlock>();
 
@@ -178,7 +173,6 @@ public class S3StreamingUpload
 			}
 			byte[] plain = readNextBlock(in, next_block_size);
 
-			total_size += plain.length;
 
 			byte[] out = null;
 
@@ -218,20 +212,23 @@ public class S3StreamingUpload
 				bb.put(out2);
 				first_block=false;
 			}
+            if (out.length==0) break;
+            
+            total_size += out.length;
 
 			save_queue.put(new DataBlock(block_no, out));
 
-			//PartETag tag = put(s3, bucket, file, upload_id, block_no, out);
+			//s3.model.PartETag tag = put(s3, bucket, file, upload_id, block_no, out);
 			//parts.add(tag);
 
 			block_no++;
 		}
 
 		
-		LinkedList<PartETag> parts = new LinkedList<PartETag>();
+		LinkedList<String> parts = new LinkedList<String>();
 		for(int i=1; i<block_no; i++)
 		{
-			PartETag part = etags.getNextBlock();
+            String part = etags.getNextBlock();
 			parts.add(part);
 		}
 
@@ -240,9 +237,7 @@ public class S3StreamingUpload
 			t.interrupt();
 			t.join();
 		}
-
-		CompleteMultipartUploadRequest complete_req = new CompleteMultipartUploadRequest(bucket, file, upload_id, parts);
-		String etag = config.getS3Client().completeMultipartUpload(complete_req).getETag();
+        String etag = config.getStorageInterface().completeMultipartupload(bucket, file, upload_id, total_size, parts);
 
 		log.info("Uploaded " + bucket + " " + file + " with etag " + etag); 
 
@@ -283,61 +278,6 @@ public class S3StreamingUpload
 		return buffer;
 
 	}
-
-    protected static PartETag put(AmazonS3Client s3, String bucket, String name, String upload_id, int block_no, byte[] out)
-    {  
-		log.log(Level.FINE, "Started " + name + "-" + block_no);
-
-		int size = out.length;
-
-		UploadPartRequest req = new UploadPartRequest();
-
-		req.setBucketName(bucket);
-		req.setKey(name);
-		req.setUploadId(upload_id);
-		req.setPartNumber(block_no);
-
-		req.setPartSize(size);
-
-		String md5 = Hash.getMd5ForS3(out);
-		req.setMd5Digest(md5);
-
-		req.setInputStream(new ByteArrayInputStream(out));
-
-        long t1 = System.nanoTime();
-
-		boolean written=false;
-
-		PartETag tag = null;
-
-		while(tag==null)
-		{
-
-			try
-			{
-
-	        	tag = s3.uploadPart(req).getPartETag();
-
-			}
-			catch(Throwable t)
-			{
-				t.printStackTrace();
-				try{Thread.sleep(10000);}catch(Exception e){}
-			}
-		}
-
-        long t2 = System.nanoTime();
-
-        double seconds = (double)(t2 - t1) / 1000000.0 / 1000.0;
-        double rate = (double)size / seconds / 1024.0;
-
-        DecimalFormat df = new DecimalFormat("0.00");
-
-		log.log(Level.FINE,name + "-" + block_no + " size: " + size + " in " + df.format(seconds) + " sec, " + df.format(rate) + " kB/s");
-
-		return tag;
-
-    }
 
 
 }

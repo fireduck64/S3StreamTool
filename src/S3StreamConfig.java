@@ -30,6 +30,8 @@ import java.io.OutputStream;
 
 import java.security.Key;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.glacier.AmazonGlacierClient;
+
 
 public class S3StreamConfig
 {
@@ -38,9 +40,13 @@ public class S3StreamConfig
 	public static final String DEFAULT_ENCRYPTION_MODE = "AES/CBC/PKCS5PADDING";
 
 
+    private AmazonGlacierClient glacier_client;
 	private AmazonS3Client s3_client;
+    private StorageInterface storage_interface;
 	private String s3_bucket;
 	private String s3_file;
+
+    private boolean glacier=false;
 
 	private boolean encryption=false;
 	private String encryption_mode= DEFAULT_ENCRYPTION_MODE;
@@ -49,10 +55,14 @@ public class S3StreamConfig
 	private int block_size=DEFAULT_BLOCK_MB * 1048576;
 	private int io_threads=DEFAULT_IO_THREADS;
 
+    private double max_bytes_per_second=0.0; //Per thread
+
 	private InputStream source; //Only applies to upload
 	private OutputStream destination; //Only applies to download
 
 	public void setS3Client(AmazonS3Client c){s3_client = c;}
+    public void setGlacierClient(AmazonGlacierClient c){glacier_client = c;}
+    public void setStorageInterface(StorageInterface i){storage_interface = i;}
 	public void setS3Bucket(String s){s3_bucket = s;}
 	public void setS3File(String s){s3_file = s;}
 	public void setEncryption(boolean e){encryption = e;}
@@ -60,12 +70,23 @@ public class S3StreamConfig
 	public void setSecretKey(Key k){secret_key = k;}
 	public void setBlockSize(int z){block_size = z;}
 	public void setIOThreads(int n){io_threads = n;}
+    public void setMaxBytesPerSecond(double m){max_bytes_per_second = m;}
 
 	public void setInputStream(InputStream in){source = in;}
 	public void setOutputStream(OutputStream out){destination = out;}
+    public void setGlacier(boolean g){glacier = g;}
 
 
 	public AmazonS3Client getS3Client(){return s3_client;}
+    public AmazonGlacierClient getGlacierClient(){return glacier_client;}
+    public StorageInterface getStorageInterface()
+    {
+        if (storage_interface == null)
+        {
+            storage_interface = new StorageS3(getS3Client());
+        }
+        return storage_interface;
+    }
 	public String getS3Bucket(){return s3_bucket;}
 	public String getS3File(){return s3_file;}
 	public boolean getEncryption(){return encryption;}
@@ -73,6 +94,9 @@ public class S3StreamConfig
 	public Key getSecretKey(){return secret_key;}
 	public int getBlockSize(){return block_size;}
 	public int getIOThreads(){return io_threads;}
+    public boolean getGlacier(){return glacier;}
+    public double getMaxBytesPerSecond(){ return max_bytes_per_second; }
+    
 
 	public InputStream getInputStream(){return source;}
 	public OutputStream getOutputStream(){return destination;}

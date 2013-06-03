@@ -27,14 +27,15 @@ package baldrickv.s3streamingtool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
-import com.amazonaws.services.s3.model.PartETag;
+import java.io.ByteArrayInputStream;
 
+import com.amazonaws.services.glacier.TreeHashGenerator;
 
 class S3StreamingUploadThread extends Thread
 {
     private S3StreamConfig config;
     private Semaphore read_allow;
-    private BlockWeaver<PartETag> weaver;
+    private BlockWeaver<String> weaver;
     private LinkedBlockingQueue<DataBlock> queue;
 	private String upload_id;
 
@@ -42,7 +43,7 @@ class S3StreamingUploadThread extends Thread
 		String upload_id,
         S3StreamConfig config,
         Semaphore read_allow,
-        BlockWeaver<PartETag> weaver,
+        BlockWeaver<String> weaver,
         LinkedBlockingQueue<DataBlock> queue)
     {
 		this.upload_id = upload_id;
@@ -65,14 +66,18 @@ class S3StreamingUploadThread extends Thread
 
                 DataBlock db = queue.take();
 				int block_no = db.getBlockNumber();
+                String hash = TreeHashGenerator.calculateTreeHash(new ByteArrayInputStream(db.getData()));
 
-				PartETag part = S3StreamingUpload.put(
-					config.getS3Client(),
-					config.getS3Bucket(), 
-					config.getS3File(), 
-					upload_id, 
-					block_no, 
-					db.getData());
+
+                String part = config.getStorageInterface().uploadPart(
+                    config.getS3Bucket(),
+                    config.getS3File(),
+                    upload_id,
+                    hash,
+                    config.getBlockSize(),
+                    block_no,
+                    db.getData(),
+                    config.getMaxBytesPerSecond());
 
                 weaver.addBlock(block_no, part );
                 

@@ -39,6 +39,7 @@ import java.util.logging.Level;
 import java.util.Scanner;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.glacier.AmazonGlacierClient;
 
 /**
  * Anyone seeking understanding of this code, please don't look at this file.
@@ -183,17 +184,41 @@ public class S3StreamingTool
 			config.setBlockSize(size);
 		}
 
-		Logger.getLogger("").setLevel(Level.WARNING);
+		Logger.getLogger("").setLevel(Level.FINE);
 
-		S3StreamingDownload.log.setLevel(Level.INFO);
-		S3StreamingUpload.log.setLevel(Level.INFO);
+		S3StreamingDownload.log.setLevel(Level.FINE);
+		S3StreamingUpload.log.setLevel(Level.FINE);
 
 
 		config.setS3Client(new AmazonS3Client(creds));
+        config.setGlacierClient(new AmazonGlacierClient(creds));
+        config.getGlacierClient().setEndpoint("glacier.us-west-2.amazonaws.com");
+
+        if (cl.hasOption("glacier"))
+        {
+            config.setGlacier(true);
+            config.setStorageInterface(new StorageGlacier(config.getGlacierClient()));
+        }
+        else
+        {
+            config.setStorageInterface(new StorageS3(config.getS3Client()));
+        }
+        if (cl.hasOption("bwlimit"))
+        {
+            config.setMaxBytesPerSecond(Double.parseDouble(cl.getOptionValue("bwlimit")));
+
+        }
 
 		if (cl.hasOption('c'))
 		{
-			S3CleanupMultipart.cleanup(config);
+            if (config.getGlacier())
+            {
+                GlacierCleanupMultipart.cleanup(config);
+            }
+            else
+            {
+    			S3CleanupMultipart.cleanup(config);
+            }
 			return;
 		}
 		if (cl.hasOption('d'))
@@ -241,6 +266,9 @@ public class S3StreamingTool
 		o.addOption(new Option("d","download",false,"Download to standard output"));
 		o.addOption(new Option("c","cleanup",false,"Interactively cleanup existing multipart uploads"));
 		o.addOption(new Option("r","credfile",true,"Location of AWS credential file"));
+        o.addOption(new Option(null,"glacier",false,"Use glacier rather than s3"));
+        o.addOption(new Option(null,"bwlimit",true,"Data rate in bytes per second per IO Thread"));
+
 
 		return o;
 

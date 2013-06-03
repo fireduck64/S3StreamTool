@@ -66,7 +66,7 @@ public class S3StreamTest
 
 		Properties test_config = new Properties();
 
-		test_config.load(new FileInputStream("s3streamtest.txt"));
+		test_config.load(new FileInputStream("s3streamtest.txt.local"));
 
 		Assert.assertTrue(test_config.containsKey("aws_id"));
 		Assert.assertTrue(test_config.containsKey("aws_secret"));
