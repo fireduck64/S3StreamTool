@@ -63,7 +63,6 @@ public class StorageGlacier extends StorageInterface
 
         
         LinkedList<byte[]> tags = new LinkedList<byte[]>();
-        int n =1;
         for(String t : parts )
         {
             try

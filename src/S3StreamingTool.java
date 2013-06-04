@@ -37,9 +37,14 @@ import java.util.logging.Level;
 
 
 import java.util.Scanner;
+import java.io.InputStream;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
+
+import com.amazonaws.services.glacier.TreeHashGenerator;
+
+
 
 /**
  * Anyone seeking understanding of this code, please don't look at this file.
@@ -89,12 +94,23 @@ public class S3StreamingTool
 		if (cl.hasOption('d')) n++;
 		if (cl.hasOption('u')) n++;
 		if (cl.hasOption('c')) n++;
+        if (cl.hasOption('m')) n++;
 
 		if (n != 1)
 		{
-			System.err.println("Must specify at exactly one of -d, -u or -c");
+			System.err.println("Must specify at exactly one of -d, -u, -c or -m");
 			System.exit(-1);
 		}
+
+        if (cl.hasOption('m'))
+        {
+            //InputStream in = new java.io.BufferedInputStream(System.in,1024*1024*2);
+            InputStream in = System.in;
+            System.out.println(in.markSupported());
+            System.out.println(TreeHashGenerator.calculateTreeHash(in));
+            return;
+        }
+
 
 		require(cl, 'b');
 		
@@ -235,7 +251,6 @@ public class S3StreamingTool
 		}
 
 
-
 	}
 
 	private static void require(CommandLine cl, char opt)
@@ -266,6 +281,8 @@ public class S3StreamingTool
 		o.addOption(new Option("d","download",false,"Download to standard output"));
 		o.addOption(new Option("c","cleanup",false,"Interactively cleanup existing multipart uploads"));
 		o.addOption(new Option("r","credfile",true,"Location of AWS credential file"));
+        o.addOption(new Option("m","merkle",false,"Get TreeHash sum of input"));
+
         o.addOption(new Option(null,"glacier",false,"Use glacier rather than s3"));
         o.addOption(new Option(null,"bwlimit",true,"Data rate in bytes per second per IO Thread"));
 
