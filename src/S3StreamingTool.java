@@ -106,7 +106,6 @@ public class S3StreamingTool
         {
             //InputStream in = new java.io.BufferedInputStream(System.in,1024*1024*2);
             InputStream in = System.in;
-            System.out.println(in.markSupported());
             System.out.println(TreeHashGenerator.calculateTreeHash(in));
             return;
         }

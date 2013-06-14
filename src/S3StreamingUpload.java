@@ -76,7 +76,7 @@ public class S3StreamingUpload
 
     }
 
-    public static void upload(InputStream in, String bucket, String file, int block_size, Key secret_key, AWSCredentials creds)
+    public static String upload(InputStream in, String bucket, String file, int block_size, Key secret_key, AWSCredentials creds)
         throws Exception
     {   
         S3StreamConfig config = new S3StreamConfig();
@@ -88,11 +88,11 @@ public class S3StreamingUpload
         config.setEncryption(true);
         config.setS3Client(new AmazonS3Client(creds));
 
-        upload(config);
+        return upload(config);
     }
 
 
-	public static void upload(S3StreamConfig config)
+	public static String upload(S3StreamConfig config)
 		throws Exception
 	{
 		
@@ -237,9 +237,9 @@ public class S3StreamingUpload
 			t.interrupt();
 			t.join();
 		}
-        String etag = config.getStorageInterface().completeMultipartupload(bucket, file, upload_id, total_size, parts);
+        String file_key = config.getStorageInterface().completeMultipartupload(bucket, file, upload_id, total_size, parts);
 
-		log.info("Uploaded " + bucket + " " + file + " with etag " + etag); 
+		log.info("Uploaded " + bucket + " " + file_key); 
 
    		long end_time = System.currentTimeMillis();
 
@@ -249,6 +249,8 @@ public class S3StreamingUpload
 		DecimalFormat df = new DecimalFormat("0.00");
 
 		log.info("Uploaded " + total_size + " at rate of " + df.format(rate_kb) + " kB/s");
+        
+        return file_key;
 		
 
 	}

@@ -64,7 +64,9 @@ public class StorageS3 extends StorageInterface
             n++;
         }
         CompleteMultipartUploadRequest complete_req = new CompleteMultipartUploadRequest(bucket, file, upload_id, tags);
-        return s3.completeMultipartUpload(complete_req).getETag();
+        s3.completeMultipartUpload(complete_req).getETag();
+
+        return file;
 
 
     }

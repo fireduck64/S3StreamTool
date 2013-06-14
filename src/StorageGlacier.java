@@ -84,7 +84,7 @@ public class StorageGlacier extends StorageInterface
         System.out.println("Archive ID: " + res.getArchiveId());
 
 
-        return glacier.completeMultipartUpload(req).getLocation();
+        return res.getArchiveId();
 
 
     }
@@ -95,7 +95,7 @@ public class StorageGlacier extends StorageInterface
         try
         {
             long end_idx = end - 1;
-            String range = "" +start + "-" + end_idx;
+            String range = "bytes=" +start + "-" + end_idx;
         
             GetJobOutputRequest req = new GetJobOutputRequest(bucket, file, range);
             GetJobOutputResult res = glacier.getJobOutput(req);
