@@ -45,7 +45,9 @@ public class StorageS3 extends StorageInterface
         }
         else
         {
-            req.setInputStream(new LimitedInputStream(new ByteArrayInputStream(out), max_rate));
+            LimitedInputStream in = new LimitedInputStream(new ByteArrayInputStream(out), max_rate);
+            in.setApplyLimit(); //S3 client doesn't read twice so trigger limit now
+            req.setInputStream(in);
         }
 
 

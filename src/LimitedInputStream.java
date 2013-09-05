@@ -56,6 +56,11 @@ public class LimitedInputStream extends InputStream
         base.mark(readlimit);
     }
 
+    public void setApplyLimit()
+    {
+        applyLimit = true;
+    }
+
     @Override
     public void reset()
         throws java.io.IOException
@@ -65,7 +70,7 @@ public class LimitedInputStream extends InputStream
         //AWS Client seems to read through once to build signature
         //and then read a second time to actually send it.
         //So we only limit on the secnod pass, after the reset
-        applyLimit=true;
+        setApplyLimit();
     }
         
 
